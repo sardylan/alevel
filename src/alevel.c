@@ -23,9 +23,16 @@
 #include <stdbool.h>
 #include <signal.h>
 #include <unistd.h>
+#include <malloc.h>
+#include <pthread.h>
 
 #include "alevel.h"
 #include "cfg.h"
+#include "ui.h"
+#include "threads.h"
+#include "soundcard/soundcard.h"
+
+#define ALEVEL_TAG ""
 
 char *program_name;
 cfg *conf;
@@ -56,8 +63,38 @@ void signal_handler(int signal) {
 }
 
 void main_program() {
-    while (keep_running) {
-        printf("e\n");
-        sleep(2);
+    soundcard_ctx *ctx;
+    pthread_t thread_acquire;
+    thread_acquire_data thread_data_acquire;
+
+    ui_message(UI_INFO, ALEVEL_TAG, "Configuring sound card");
+
+    ctx = (soundcard_ctx *) malloc(sizeof(soundcard_ctx));
+    soundcard_ctx_init(ctx);
+
+    if (!soundcard_open(ctx, conf->sound_device)) {
+        soundcard_deinit(ctx);
+        free(ctx);
+        return;
     }
+
+    if (!soundcard_config(ctx)) {
+        soundcard_deinit(ctx);
+        free(ctx);
+        return;
+    }
+
+    ui_message(UI_INFO, ALEVEL_TAG, "Starting threads");
+
+    thread_data_acquire.ctx = ctx;
+    thread_acquire_start(&thread_acquire, &thread_data_acquire);
+
+    ui_message(UI_INFO, ALEVEL_TAG, "Joining threads");
+    pthread_join(thread_acquire, NULL);
+
+    ui_message(UI_INFO, ALEVEL_TAG, "Closing sound card");
+    soundcard_close(ctx);
+    soundcard_deinit(ctx);
+
+    free(ctx);
 }
