@@ -14,8 +14,7 @@ set(ALEVEL_SOURCES
         alevel.c
         utils.c
         ui.c
-        cfg.c
-        threads.c)
+        cfg.c)
 
 set(ALEVEL_HEADERS
         version.h
@@ -23,11 +22,13 @@ set(ALEVEL_HEADERS
         alevel.h
         utils.h
         ui.h
-        cfg.h
-        threads.h)
+        cfg.h)
 
 find_package(ALSA REQUIRED)
 include_directories(${ALSA_INCLUDE_DIRS})
+
+find_package(Curses REQUIRED)
+include_directories(${CURSES_INCLUDE_DIR})
 
 add_executable(alevel
         ${ALEVEL_UTILITY_SOURCES} ${ALEVEL_UTILITY_HEADERS}
@@ -36,4 +37,5 @@ add_executable(alevel
 
 target_link_libraries(alevel
         m pthread
-        ${ALSA_LIBRARIES})
+        ${ALSA_LIBRARIES}
+        ${CURSES_LIBRARIES})

@@ -20,11 +20,12 @@
  */
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <math.h>
 
 #include "audio.h"
 
-uint8_t audio_compute_rms(uint8_t *pcm, long size) {
+uint8_t audio_compute_rms(const uint8_t *pcm, long size) {
     long i;
     long sum;
 
@@ -33,5 +34,5 @@ uint8_t audio_compute_rms(uint8_t *pcm, long size) {
     for (i = 0; i < size; i++)
         sum += pow(*(pcm + i), 2);
 
-    return (uint8_t) sqrt(sum);
+    return (uint8_t) abs((int) sqrt((double) sum / size) - 128);
 }

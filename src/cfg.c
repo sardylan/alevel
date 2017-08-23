@@ -72,7 +72,7 @@ bool cfg_parse(int argc, char **argv) {
             {"verbose",      no_argument,       0, 'v'},
             {"debug-level",  required_argument, 0, 'd'},
             {"sound-device", required_argument, 0, 'a'},
-            {NULL,           NULL, NULL, NULL}
+            {0, 0,                              0, 0}
     };
 
     while (true) {

@@ -22,6 +22,6 @@
 #ifndef __ALEVEL_UTILITY_AUDIO_H
 #define __ALEVEL_UTILITY_AUDIO_H
 
-uint8_t audio_compute_rms(uint8_t *, long);
+uint8_t audio_compute_rms(const uint8_t *, long);
 
 #endif

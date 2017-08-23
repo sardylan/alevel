@@ -22,17 +22,19 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <signal.h>
-#include <unistd.h>
 #include <malloc.h>
-#include <pthread.h>
+#include <ncurses.h>
 
 #include "alevel.h"
 #include "cfg.h"
 #include "ui.h"
-#include "threads.h"
+#include "utility/audio.h"
 #include "soundcard/soundcard.h"
 
 #define ALEVEL_TAG ""
+
+#define ACQUIRE_BUFFER_SIZE 512
+#define AUDIO_LEVEL_SIZE 64
 
 char *program_name;
 cfg *conf;
@@ -64,8 +66,16 @@ void signal_handler(int signal) {
 
 void main_program() {
     soundcard_ctx *ctx;
-    pthread_t thread_acquire;
-    thread_acquire_data thread_data_acquire;
+    uint8_t buffer[ACQUIRE_BUFFER_SIZE];
+    uint8_t rms;
+    int result;
+    snd_pcm_sframes_t frames;
+    char message[1024];
+    char level[AUDIO_LEVEL_SIZE + 1];
+    int value;
+    int i;
+
+    memset(level, '\0', sizeof(level));
 
     ui_message(UI_INFO, ALEVEL_TAG, "Configuring sound card");
 
@@ -84,13 +94,39 @@ void main_program() {
         return;
     }
 
-    ui_message(UI_INFO, ALEVEL_TAG, "Starting threads");
+    ui_message(UI_INFO, ALEVEL_TAG, "Starting sound acquire");
 
-    thread_data_acquire.ctx = ctx;
-    thread_acquire_start(&thread_acquire, &thread_data_acquire);
+    if ((result = snd_pcm_prepare(ctx->in_handle)) < 0) {
+        ui_message(UI_ERROR, ALEVEL_TAG, "Error preparing capture handler");
+        soundcard_deinit(ctx);
+        free(ctx);
+        return;
+    }
 
-    ui_message(UI_INFO, ALEVEL_TAG, "Joining threads");
-    pthread_join(thread_acquire, NULL);
+    while (keep_running) {
+        frames = snd_pcm_readi(ctx->in_handle, buffer, ACQUIRE_BUFFER_SIZE);
+        if (frames != ACQUIRE_BUFFER_SIZE) {
+            ui_message(UI_ERROR, ALEVEL_TAG, "Read from audio interface failed (%s)", snd_strerror(result));
+            soundcard_close(ctx);
+            soundcard_deinit(ctx);
+            free(ctx);
+            return;
+        }
+
+        rms = audio_compute_rms(buffer, frames);
+        value = rms / (256 / AUDIO_LEVEL_SIZE);
+
+        for (i = 0; i < AUDIO_LEVEL_SIZE; i++)
+            if (i < value)
+                level[i] = '#';
+            else
+                level[i] = '-';
+
+        memset(message, '\0', sizeof(message));
+        sprintf(message, "Read %d audio frames - RMS: %03d/256 - Level: %s", (int) frames, (int) rms, level);
+
+        printf("%s\n", message);
+    }
 
     ui_message(UI_INFO, ALEVEL_TAG, "Closing sound card");
     soundcard_close(ctx);
