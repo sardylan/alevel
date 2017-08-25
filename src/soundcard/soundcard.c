@@ -41,13 +41,15 @@ bool soundcard_open(soundcard_ctx *ctx, char *sound_device) {
 
     result = snd_pcm_open(&(ctx->in_handle), sound_device, SND_PCM_STREAM_CAPTURE, 0);
     if (result < 0) {
-        ui_message(UI_ERROR, "Unable to open pcm device \"%s\": %s\n", sound_device, (char *) snd_strerror(result));
+        ui_message(UI_ERROR, SOUNDCARD_TAG, "Unable to open pcm device \"%s\": %s\n", sound_device,
+                   (char *) snd_strerror(result));
         return false;
     }
 
     result = snd_pcm_open(&(ctx->out_handle), sound_device, SND_PCM_STREAM_PLAYBACK, 0);
     if (result < 0) {
-        ui_message(UI_ERROR, "Unable to open pcm device \"%s\": %s\n", sound_device, (char *) snd_strerror(result));
+        ui_message(UI_ERROR, SOUNDCARD_TAG, "Unable to open pcm device \"%s\": %s\n", sound_device,
+                   (char *) snd_strerror(result));
         return false;
     }
 
