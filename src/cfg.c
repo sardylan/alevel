@@ -76,7 +76,7 @@ bool cfg_parse(int argc, char **argv) {
     };
 
     while (true) {
-        c = getopt_long(argc, argv, "hVqf:vd:l:k:m:sch:p:", long_options, &option_index);
+        c = getopt_long(argc, argv, "hVqvd:a:", long_options, &option_index);
 
         if (c == -1) {
             break;

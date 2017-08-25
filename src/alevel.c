@@ -33,8 +33,7 @@
 
 #define ALEVEL_TAG ""
 
-//#define ACQUIRE_BUFFER_SIZE 512
-#define ACQUIRE_BUFFER_SIZE 8
+#define ACQUIRE_BUFFER_SIZE 512
 #define AUDIO_LEVEL_SIZE 64
 
 char *program_name;
@@ -68,7 +67,8 @@ void signal_handler(int signal) {
 void main_program() {
     soundcard_ctx *ctx;
     uint8_t buffer[ACQUIRE_BUFFER_SIZE];
-    uint8_t rms;
+    uint8_t rms_raw;
+    int rms;
     int result;
     snd_pcm_sframes_t frames;
     char message[1024];
@@ -129,20 +129,25 @@ void main_program() {
         return;
     }
 
-    init_pair(0, COLOR_BLACK, COLOR_GREEN);
+    init_pair(0, COLOR_WHITE, COLOR_BLACK);
+    init_pair(1, COLOR_GREEN, COLOR_BLACK);
+
+    mvaddstr(0, 0, "Audio frames:");
+    mvaddstr(1, 0, "Value:");
+    mvaddstr(2, 0, "RMS:");
+    mvaddstr(4, 0, "Level:");
 
     while (keep_running) {
         frames = snd_pcm_readi(ctx->in_handle, buffer, ACQUIRE_BUFFER_SIZE);
         if (frames != ACQUIRE_BUFFER_SIZE) {
             ui_message(UI_ERROR, ALEVEL_TAG, "Read from audio interface failed (%s)", snd_strerror(result));
-            soundcard_close(ctx);
-            soundcard_deinit(ctx);
-            free(ctx);
-            return;
+            break;
         }
 
-        rms = audio_compute_rms(buffer, frames);
-        value = rms / (256 / AUDIO_LEVEL_SIZE);
+        rms_raw = audio_compute_rms(buffer, frames);
+        rms = 2 * (rms_raw - 128);
+        if (rms < 0) rms = -rms;
+        value = (int) (((float) rms / 256) * AUDIO_LEVEL_SIZE);
 
         for (i = 0; i < AUDIO_LEVEL_SIZE; i++)
             if (i < value)
@@ -152,10 +157,22 @@ void main_program() {
 
 //        memset(message, '\0', sizeof(message));
 //        sprintf(message, "Read %d audio frames - RMS: %03d/256 - Level: %s", (int) frames, (int) rms, level);
-//
 //        printf("%s\n", message);
+
         color_set(0, NULL);
-        mvaddstr(0, 0, level);
+
+        sprintf(message, "%0d", (int) frames);
+        mvaddstr(0, 14, message);
+
+        sprintf(message, "%03d/256 (%d)", (int) rms_raw, rms);
+        mvaddstr(1, 14, message);
+
+        sprintf(message, "%d", value);
+        mvaddstr(2, 14, message);
+
+        color_set(1, NULL);
+        mvaddstr(4, 14, level);
+
         refresh();
     }
 
