@@ -33,7 +33,8 @@
 
 #define ALEVEL_TAG ""
 
-#define ACQUIRE_BUFFER_SIZE 512
+//#define ACQUIRE_BUFFER_SIZE 512
+#define ACQUIRE_BUFFER_SIZE 8
 #define AUDIO_LEVEL_SIZE 64
 
 char *program_name;
@@ -74,6 +75,7 @@ void main_program() {
     char level[AUDIO_LEVEL_SIZE + 1];
     int value;
     int i;
+    WINDOW *window;
 
     memset(level, '\0', sizeof(level));
 
@@ -103,6 +105,32 @@ void main_program() {
         return;
     }
 
+    window = initscr();
+    if (window == NULL) {
+        ui_message(UI_ERROR, ALEVEL_TAG, "Error initialising ncurses");
+
+        soundcard_deinit(ctx);
+        free(ctx);
+
+        return;
+    }
+
+    start_color();
+    if (!has_colors() || COLOR_PAIRS < 13) {
+        ui_message(UI_ERROR, ALEVEL_TAG, "Ncurses doesn't have colors");
+
+        delwin(window);
+        endwin();
+        refresh();
+
+        soundcard_deinit(ctx);
+        free(ctx);
+
+        return;
+    }
+
+    init_pair(0, COLOR_BLACK, COLOR_GREEN);
+
     while (keep_running) {
         frames = snd_pcm_readi(ctx->in_handle, buffer, ACQUIRE_BUFFER_SIZE);
         if (frames != ACQUIRE_BUFFER_SIZE) {
@@ -122,11 +150,18 @@ void main_program() {
             else
                 level[i] = '-';
 
-        memset(message, '\0', sizeof(message));
-        sprintf(message, "Read %d audio frames - RMS: %03d/256 - Level: %s", (int) frames, (int) rms, level);
-
-        printf("%s\n", message);
+//        memset(message, '\0', sizeof(message));
+//        sprintf(message, "Read %d audio frames - RMS: %03d/256 - Level: %s", (int) frames, (int) rms, level);
+//
+//        printf("%s\n", message);
+        color_set(0, NULL);
+        mvaddstr(0, 0, level);
+        refresh();
     }
+
+    delwin(window);
+    endwin();
+    refresh();
 
     ui_message(UI_INFO, ALEVEL_TAG, "Closing sound card");
     soundcard_close(ctx);
