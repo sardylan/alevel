@@ -41,14 +41,14 @@ bool soundcard_open(soundcard_ctx *ctx, char *sound_device) {
 
     result = snd_pcm_open(&(ctx->in_handle), sound_device, SND_PCM_STREAM_CAPTURE, 0);
     if (result < 0) {
-        ui_message(UI_ERROR, SOUNDCARD_TAG, "Unable to open pcm device \"%s\": %s\n", sound_device,
+        ui_message(UI_ERROR, SOUNDCARD_TAG, "Unable to open pcm device \"%s\": %s", sound_device,
                    (char *) snd_strerror(result));
         return false;
     }
 
     result = snd_pcm_open(&(ctx->out_handle), sound_device, SND_PCM_STREAM_PLAYBACK, 0);
     if (result < 0) {
-        ui_message(UI_ERROR, SOUNDCARD_TAG, "Unable to open pcm device \"%s\": %s\n", sound_device,
+        ui_message(UI_ERROR, SOUNDCARD_TAG, "Unable to open pcm device \"%s\": %s", sound_device,
                    (char *) snd_strerror(result));
         return false;
     }
@@ -84,7 +84,7 @@ bool soundcard_config_stream(snd_pcm_t *handle, unsigned int *rate) {
     snd_pcm_hw_params_free(params);
 
     if (result < 0) {
-        ui_message(UI_ERROR, SOUNDCARD_TAG, "unable to set hw parameters: %s\n", (char *) snd_strerror(result));
+        ui_message(UI_ERROR, SOUNDCARD_TAG, "unable to set hw parameters: %s", (char *) snd_strerror(result));
         return false;
     }
 
